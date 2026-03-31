@@ -115,13 +115,8 @@ class RadarView @JvmOverloads constructor(
         drawCompass(canvas, w, h)
     }
 
-    fun updateEntities(entities: List<GameEntity>) {
-        // Entities are updated via StateFlow observation in the rendering loop
-    }
-
     private fun drawBackground(canvas: Canvas, w: Float, h: Float) {
         canvas.drawColor(Color.parseColor("#0D0D0D"))
-
         paint.color = Color.parseColor("#1A3A1A")
         paint.style = Paint.Style.FILL
         val rangeRadius = Math.min(w, h) / 2f
@@ -141,10 +136,8 @@ class RadarView @JvmOverloads constructor(
             canvas.drawCircle(centerX, centerY, gridRadius, gridPaint)
         }
 
-        gridPaint.strokeWidth = 1f
         canvas.drawLine(centerX, 0f, centerX, h, gridPaint)
         canvas.drawLine(0f, centerY, w, centerY, gridPaint)
-
         canvas.restore()
     }
 
@@ -177,7 +170,8 @@ class RadarView @JvmOverloads constructor(
             EntityType.DUNGEON -> drawDungeon(canvas, entity, x, y)
             EntityType.CHEST -> drawChest(canvas, entity, x, y)
             EntityType.FISHING -> drawFishing(canvas, entity, x, y)
-            EntityType.MIST -> drawMist(canvas, entity, x, y)
+            EntityType.MIST, EntityType.MIST_PORTAL -> drawMist(canvas, entity, x, y)
+            EntityType.WISP_CAGE -> drawWispCage(canvas, entity, x, y)
         }
     }
 
@@ -288,7 +282,7 @@ class RadarView @JvmOverloads constructor(
         if (settings.showLabels) {
             textPaint.color = color
             textPaint.textSize = 12f
-            canvas.drawText(entity.chestRarity, x, y - 8f, textPaint)
+            canvas.drawText(entity.chestRarity.ifEmpty { "Chest" }, x, y - 8f, textPaint)
         }
     }
 
@@ -299,7 +293,7 @@ class RadarView @JvmOverloads constructor(
         if (settings.showLabels) {
             textPaint.color = Color.parseColor("#2196F3")
             textPaint.textSize = 12f
-            canvas.drawText("🐟 ${entity.fishSize}/${entity.fishTotal}", x, y - 8f, textPaint)
+            canvas.drawText("Fish ${entity.fishSize}/${entity.fishTotal}", x, y - 8f, textPaint)
         }
     }
 
@@ -314,13 +308,22 @@ class RadarView @JvmOverloads constructor(
         }
     }
 
+    private fun drawWispCage(canvas: Canvas, entity: GameEntity, x: Float, y: Float) {
+        entityPaint.color = Color.parseColor("#FFD700")
+        canvas.drawCircle(x, y, 5f, entityPaint)
+
+        if (settings.showLabels) {
+            textPaint.color = Color.parseColor("#FFD700")
+            textPaint.textSize = 12f
+            canvas.drawText("Wisp", x, y - 8f, textPaint)
+        }
+    }
+
     private fun drawCenterPlayer(canvas: Canvas) {
         centerDotPaint.color = Color.BLUE
         canvas.drawCircle(centerX, centerY, PLAYER_DOT_RADIUS, centerDotPaint)
-
         centerDotPaint.color = Color.WHITE
         canvas.drawCircle(centerX, centerY, PLAYER_DOT_RADIUS - 2f, centerDotPaint)
-
         centerDotPaint.color = Color.BLUE
         canvas.drawCircle(centerX, centerY, 2f, centerDotPaint)
     }
@@ -335,21 +338,13 @@ class RadarView @JvmOverloads constructor(
         canvas.drawText("E", w - 20f, centerY, textPaint)
     }
 
-    private fun drawHealthBar(
-        canvas: Canvas,
-        x: Float, y: Float,
-        current: Int, max: Int,
-        width: Float, height: Float
-    ) {
-        val barWidth = width
-        val barHeight = height
+    private fun drawHealthBar(canvas: Canvas, x: Float, y: Float, current: Int, max: Int, width: Float, height: Float) {
         val hpPercent = if (max > 0) current.toFloat() / max.toFloat() else 0f
-
-        val left = x - barWidth / 2f
-        val top = y - barHeight / 2f
+        val left = x - width / 2f
+        val top = y - height / 2f
 
         healthBarBgPaint.color = Color.parseColor("#44000000")
-        canvas.drawRoundRect(RectF(left, top, left + barWidth, top + barHeight), 1f, 1f, healthBarBgPaint)
+        canvas.drawRoundRect(RectF(left, top, left + width, top + height), 1f, 1f, healthBarBgPaint)
 
         val hpColor = when {
             hpPercent > 0.6f -> Color.GREEN
@@ -357,10 +352,7 @@ class RadarView @JvmOverloads constructor(
             else -> Color.RED
         }
         healthBarPaint.color = hpColor
-        canvas.drawRoundRect(
-            RectF(left, top, left + barWidth * hpPercent, top + barHeight),
-            1f, 1f, healthBarPaint
-        )
+        canvas.drawRoundRect(RectF(left, top, left + width * hpPercent, top + height), 1f, 1f, healthBarPaint)
     }
 
     private fun drawChargeIndicator(canvas: Canvas, x: Float, y: Float, charges: Int, color: Int) {
@@ -386,38 +378,32 @@ class RadarView @JvmOverloads constructor(
             if (abs(dx) > 0.01f || abs(dy) > 0.01f) {
                 val newDisplayX = entity.displayX + dx * factor
                 val newDisplayY = entity.displayY + dy * factor
-                entityManager.addOrUpdateEntity(
-                    entity.copy(displayX = newDisplayX, displayY = newDisplayY)
-                )
+                entityManager.addOrUpdateEntity(entity.copy(displayX = newDisplayX, displayY = newDisplayY))
             }
         }
     }
 
     private fun shouldDrawEntity(entity: GameEntity): Boolean {
         return when (entity.type) {
-            EntityType.RESOURCE -> {
-                entity.tier >= settings.minTier && settings.shouldShowResource(entity.resourceType)
-            }
-            EntityType.MOB -> {
-                entity.tier >= settings.minTier && settings.shouldShowMob(entity.enemyType)
-            }
+            EntityType.RESOURCE -> entity.tier >= settings.minTier && settings.shouldShowResource(entity.resourceType)
+            EntityType.MOB -> settings.shouldShowMob(entity.enemyType)
             EntityType.PLAYER -> settings.shouldShowPlayer(entity.faction)
             EntityType.DUNGEON -> settings.showDungeons
             EntityType.CHEST -> settings.showChests
             EntityType.FISHING -> settings.showFishing
-            EntityType.MIST -> settings.showMist
+            EntityType.MIST, EntityType.MIST_PORTAL -> settings.showMist
+            EntityType.WISP_CAGE -> settings.showMist
         }
     }
 
     private fun getResourceColor(type: String, tier: Int): Int {
-        val tierColor = getTierColor(tier)
         return when (type.uppercase()) {
             "ORE" -> Color.parseColor("#FFD700")
-            "WOOD", "LOG" -> Color.parseColor("#8B4513")
+            "WOOD", "LOG", "LOGS" -> Color.parseColor("#8B4513")
             "ROCK" -> Color.parseColor("#808080")
             "FIBER" -> Color.parseColor("#9370DB")
             "HIDE" -> Color.parseColor("#CD853F")
-            else -> tierColor
+            else -> getTierColor(tier)
         }
     }
 
