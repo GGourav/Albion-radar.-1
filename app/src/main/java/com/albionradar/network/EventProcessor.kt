@@ -2,292 +2,348 @@ package com.albionradar.network
 
 import android.util.Log
 import com.albionradar.data.*
-import com.albionradar.photon.*
+import com.albionradar.photon.PhotonParser
 import kotlinx.coroutines.*
-import java.util.concurrent.ConcurrentLinkedQueue
 
 class EventProcessor {
 
     companion object {
         private const val TAG = "EventProcessor"
+
+        // Photon event codes from Albion Online
+        const val EVENT_LEAVE = 1
+        const val EVENT_MOVE = 3
+        const val EVENT_NEW_CHARACTER = 29
+        const val EVENT_BATCH_RESOURCES = 38
+        const val EVENT_NEW_RESOURCE = 40
+        const val EVENT_NEW_MOB = 123
+        const val EVENT_HEALTH_UPDATE = 50
+        const val EVENT_PLAYER_MOVE = 27
+        const val EVENT_ZONE_CHANGE = 100
+        const val EVENT_CHEST_INFO = 71
+        const val EVENT_DUNGEON_INFO = 72
+        const val EVENT_FISHING_SPOT = 75
+        const val EVENT_MIST_PORTAL = 95
+        const val EVENT_WISP_CAGE = 115
     }
 
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val photonParser = PhotonParser()
     private val entityManager = EntityManager.getInstance()
-    private val dataManager by lazy { DataManager.getInstance() }
-    
-    private var processingScope: CoroutineScope? = null
-    private val packetQueue = ConcurrentLinkedQueue<ByteArray>()
-    
-    private var playerPosX = 0f
-    private var playerPosY = 0f
+    private var playerPosition = Pair(0f, 0f)
 
     fun start() {
-        processingScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-        processingScope?.launch {
-            dataManager.loadDatabases()
-            processQueue()
-        }
+        Log.i(TAG, "EventProcessor started")
     }
 
     fun stop() {
-        processingScope?.cancel()
-        processingScope = null
+        scope.cancel()
+        Log.i(TAG, "EventProcessor stopped")
     }
 
     fun processPacket(payload: ByteArray) {
-        packetQueue.offer(payload)
-    }
-
-    private fun processQueue() {
-        processingScope?.launch {
-            while (isActive) {
-                val payload = packetQueue.poll()
-                if (payload != null) {
-                    try {
-                        processPhotonPacket(payload)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error processing packet", e)
-                    }
-                } else {
-                    delay(1)
-                }
+        try {
+            val events = photonParser.parse(payload)
+            for (event in events) {
+                processEvent(event)
             }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error processing packet: ${e.message}")
         }
     }
 
-    private fun processPhotonPacket(payload: ByteArray) {
-        val events = photonParser.parsePacket(payload)
-        
-        for (event in events) {
-            handleEvent(event)
+    private fun processEvent(event: PhotonEvent) {
+        when (event.code) {
+            EVENT_NEW_CHARACTER -> handleNewCharacter(event)
+            EVENT_NEW_MOB -> handleNewMob(event)
+            EVENT_NEW_RESOURCE -> handleNewResource(event)
+            EVENT_BATCH_RESOURCES -> handleBatchResources(event)
+            EVENT_MOVE -> handleMove(event)
+            EVENT_LEAVE -> handleLeave(event)
+            EVENT_HEALTH_UPDATE -> handleHealthUpdate(event)
+            EVENT_CHEST_INFO -> handleChest(event)
+            EVENT_DUNGEON_INFO -> handleDungeon(event)
+            EVENT_FISHING_SPOT -> handleFishingSpot(event)
+            EVENT_MIST_PORTAL -> handleMistPortal(event)
+            EVENT_WISP_CAGE -> handleWispCage(event)
         }
     }
 
-    private fun handleEvent(event: GameEvent) {
-        when (event.eventCode) {
-            AlbionEvents.LEAVE -> handleLeave(event)
-            AlbionEvents.MOVE -> handleMove(event)
-            AlbionEvents.NEW_CHARACTER -> handleNewCharacter(event)
-            AlbionEvents.NEW_SIMPLE_HARVESTABLE_LIST -> handleHarvestableList(event)
-            AlbionEvents.NEW_HARVESTABLE -> handleNewHarvestable(event)
-            AlbionEvents.HARVESTABLE_CHANGE_STATE -> handleHarvestableState(event)
-            AlbionEvents.NEW_MOB -> handleNewMob(event)
-            AlbionEvents.MOB_CHANGE_STATE -> handleMobState(event)
-            AlbionEvents.NEW_DUNGEON_EXIT -> handleNewDungeon(event)
-            AlbionEvents.NEW_LOOT_CHEST -> handleNewChest(event)
-            AlbionEvents.NEW_FISHING_ZONE -> handleNewFishing(event)
-            AlbionEvents.NEW_MIST_PORTAL -> handleNewMist(event)
-            AlbionOperations.OP_CHANGE_CLUSTER or 0x1000 -> handleChangeCluster(event)
+    private fun handleNewCharacter(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val name = parameters[1] as? String ?: "Unknown"
+        val posX = (parameters[2] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[3] as? Number)?.toFloat() ?: 0f
+        val faction = (parameters[4] as? Number)?.toInt() ?: 0
+        val guild = parameters[5] as? String ?: ""
+        val alliance = parameters[6] as? String ?: ""
+
+        if (name == getPlayerName()) {
+            playerPosition = Pair(posX, posY)
+            return
         }
-    }
 
-    private fun handleLeave(event: GameEvent) {
-        entityManager.removeEntity(event.entityId)
-    }
-
-    private fun handleMove(event: GameEvent) {
-        val position = photonParser.extractPositionFromMove(event.parameters)
-        if (position != null) {
-            entityManager.updatePosition(event.entityId, position.first, position.second)
-        }
-    }
-
-    private fun handleNewCharacter(event: GameEvent) {
-        val name = event.getString(1) ?: return
-        val guild = event.getString(44) ?: ""
-        val alliance = event.getString(46) ?: ""
-        val faction = event.getInt(51) ?: 0
-        val mounted = event.getInt(55) ?: 0
-        
-        val posX = event.getFloat(9) ?: 0f
-        val posY = event.getFloat(10) ?: 0f
-        
         val entity = GameEntity(
-            id = event.entityId,
+            id = id,
             type = EntityType.PLAYER,
             name = name,
-            guild = guild,
-            alliance = alliance,
-            faction = faction,
-            mounted = mounted > 0,
             posX = posX,
             posY = posY,
-            isHostile = faction == 255
+            faction = faction,
+            guild = guild,
+            alliance = alliance,
+            distance = calculateDistance(posX, posY)
         )
-        
+
+        entityManager.addOrUpdateEntity(entity)
+        Log.d(TAG, "New player: $name at ($posX, $posY)")
+    }
+
+    private fun handleNewMob(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val typeId = parameters[1] as? Int ?: 0
+        val posX = (parameters[2] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[3] as? Number)?.toFloat() ?: 0f
+        val health = (parameters[4] as? Number)?.toInt() ?: 100
+        val maxHealth = (parameters[5] as? Number)?.toInt() ?: 100
+
+        val dataManager = try {
+            DataManager.getInstance()
+        } catch (e: Exception) {
+            null
+        }
+
+        val (enemyType, mobName) = dataManager?.classifyMob(typeId) ?: Pair(2, "Mob")
+        val mobInfo = dataManager?.getMobInfo(typeId)
+        val displayName = mobInfo?.let { dataManager.getMobDisplayName(it) } ?: mobName
+
+        val entity = GameEntity(
+            id = id,
+            type = EntityType.MOB,
+            name = displayName,
+            posX = posX,
+            posY = posY,
+            health = health,
+            maxHealth = maxHealth,
+            tier = mobInfo?.tier ?: 0,
+            distance = calculateDistance(posX, posY)
+        )
+
         entityManager.addOrUpdateEntity(entity)
     }
 
-    private fun handleHarvestableList(event: GameEvent) {
-        val harvestables = event.getArray(0) ?: return
-        
-        for (h in harvestables) {
-            try {
-                val params = h.asArray() ?: continue
-                if (params.size < 8) continue
-                
-                val typeId = params[0].asInt() ?: continue
-                val posX = params[3].asFloat() ?: continue
-                val posY = params[4].asFloat() ?: continue
-                val size = params[5].asInt() ?: 1
-                val tier = params[6].asInt() ?: 1
-                val enchant = params[7].asInt() ?: 0
-                
-                val resourceType = ResourceTypeNumbers.getTypeName(typeId)
-                
-                val entity = GameEntity(
-                    id = event.entityId * 1000 + typeId,
-                    type = EntityType.RESOURCE,
-                    posX = posX,
-                    posY = posY,
-                    tier = tier,
-                    enchant = enchant,
-                    size = size,
-                    resourceType = resourceType
-                )
-                
-                entityManager.addOrUpdateEntity(entity)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error parsing harvestable", e)
+    private fun handleNewResource(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val typeName = parameters[1] as? String ?: return
+        val tier = (parameters[2] as? Number)?.toInt() ?: 0
+        val posX = (parameters[3] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[4] as? Number)?.toFloat() ?: 0f
+        val size = (parameters[5] as? Number)?.toInt() ?: 0
+        val enchant = (parameters[6] as? Number)?.toInt() ?: 0
+
+        val resourceType = when {
+            typeName.contains("WOOD", ignoreCase = true) -> "Logs"
+            typeName.contains("ROCK", ignoreCase = true) -> "Rock"
+            typeName.contains("FIBER", ignoreCase = true) -> "Fiber"
+            typeName.contains("HIDE", ignoreCase = true) -> "Hide"
+            typeName.contains("ORE", ignoreCase = true) -> "Ore"
+            else -> typeName
+        }
+
+        val entity = GameEntity(
+            id = id,
+            type = EntityType.RESOURCE,
+            name = resourceType,
+            posX = posX,
+            posY = posY,
+            tier = tier,
+            size = size,
+            enchant = enchant,
+            distance = calculateDistance(posX, posY)
+        )
+
+        entityManager.addOrUpdateEntity(entity)
+    }
+
+    private fun handleBatchResources(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+        val batch = parameters[0] as? List<*> ?: return
+
+        for (item in batch) {
+            val resourceParams = item as? Map<*, *> ?: continue
+
+            val id = (resourceParams[0] as? Number)?.toInt() ?: continue
+            val typeName = resourceParams[1] as? String ?: continue
+            val tier = (resourceParams[2] as? Number)?.toInt() ?: 0
+            val posX = (resourceParams[3] as? Number)?.toFloat() ?: 0f
+            val posY = (resourceParams[4] as? Number)?.toFloat() ?: 0f
+            val size = (resourceParams[5] as? Number)?.toInt() ?: 0
+            val enchant = (resourceParams[6] as? Number)?.toInt() ?: 0
+
+            val resourceType = when {
+                typeName.contains("WOOD", ignoreCase = true) -> "Logs"
+                typeName.contains("ROCK", ignoreCase = true) -> "Rock"
+                typeName.contains("FIBER", ignoreCase = true) -> "Fiber"
+                typeName.contains("HIDE", ignoreCase = true) -> "Hide"
+                typeName.contains("ORE", ignoreCase = true) -> "Ore"
+                else -> typeName
             }
+
+            val entity = GameEntity(
+                id = id,
+                type = EntityType.RESOURCE,
+                name = resourceType,
+                posX = posX,
+                posY = posY,
+                tier = tier,
+                size = size,
+                enchant = enchant,
+                distance = calculateDistance(posX, posY)
+            )
+
+            entityManager.addOrUpdateEntity(entity)
         }
     }
 
-    private fun handleNewHarvestable(event: GameEvent) {
-        val typeId = event.getInt(1) ?: return
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val size = event.getInt(5) ?: 1
-        val tier = event.getInt(6) ?: 1
-        val enchant = event.getInt(7) ?: 0
-        
-        val resourceType = ResourceTypeNumbers.getTypeName(typeId)
-        
+    private fun handleMove(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: return
+        val posY = (parameters[2] as? Number)?.toFloat() ?: return
+
+        entityManager.updatePosition(id, posX, posY)
+    }
+
+    private fun handleLeave(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+        val id = parameters[0] as? Int ?: return
+        entityManager.removeEntity(id)
+    }
+
+    private fun handleHealthUpdate(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+        val id = parameters[0] as? Int ?: return
+        val health = (parameters[1] as? Number)?.toInt() ?: return
+        entityManager.updateHealth(id, health)
+    }
+
+    private fun handleChest(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[2] as? Number)?.toFloat() ?: 0f
+        val tier = (parameters[3] as? Number)?.toInt() ?: 0
+
         val entity = GameEntity(
-            id = event.entityId,
-            type = EntityType.RESOURCE,
-            posX = posX,
-            posY = posY,
-            tier = tier,
-            enchant = enchant,
-            size = size,
-            resourceType = resourceType
-        )
-        
-        entityManager.addOrUpdateEntity(entity)
-    }
-
-    private fun handleHarvestableState(event: GameEvent) {
-        val size = event.getInt(1)
-        val enchant = event.getInt(2)
-        entityManager.updateHarvestableState(event.entityId, size, enchant)
-    }
-
-    private fun handleNewMob(event: GameEvent) {
-        val typeId = event.getInt(1) ?: return
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val health = event.getInt(7) ?: 0
-        val maxHealth = event.getInt(8) ?: 1
-        
-        val (enemyType, resourceName) = dataManager.classifyMob(typeId)
-        val mobInfo = dataManager.getMobInfo(typeId)
-        val tier = mobInfo?.tier ?: 1
-        val displayName = mobInfo?.let { dataManager.getMobDisplayName(it) } ?: "Mob"
-        
-        val entity = GameEntity(
-            id = event.entityId,
-            type = EntityType.MOB,
-            posX = posX,
-            posY = posY,
-            tier = tier,
-            health = health,
-            maxHealth = maxHealth,
-            enemyType = enemyType,
-            displayName = displayName
-        )
-        
-        entityManager.addOrUpdateEntity(entity)
-    }
-
-    private fun handleMobState(event: GameEvent) {
-        val health = event.getInt(1) ?: return
-        entityManager.updateHealth(event.entityId, health)
-    }
-
-    private fun handleNewDungeon(event: GameEvent) {
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val dungeonType = event.getInt(1) ?: 0
-        val enchant = event.getInt(5) ?: 0
-        
-        val entity = GameEntity(
-            id = event.entityId,
-            type = EntityType.DUNGEON,
-            posX = posX,
-            posY = posY,
-            dungeonType = dungeonType,
-            enchant = enchant
-        )
-        
-        entityManager.addOrUpdateEntity(entity)
-    }
-
-    private fun handleNewChest(event: GameEvent) {
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val rarity = event.getString(1) ?: "common"
-        
-        val entity = GameEntity(
-            id = event.entityId,
+            id = id,
             type = EntityType.CHEST,
+            name = "Chest T$tier",
             posX = posX,
             posY = posY,
-            chestRarity = rarity
+            tier = tier,
+            distance = calculateDistance(posX, posY)
         )
-        
+
         entityManager.addOrUpdateEntity(entity)
     }
 
-    private fun handleNewFishing(event: GameEvent) {
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val fishSize = event.getInt(1) ?: 0
-        val fishTotal = event.getInt(2) ?: 0
-        
+    private fun handleDungeon(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[2] as? Number)?.toFloat() ?: 0f
+        val dungeonType = parameters[3] as? String ?: "Dungeon"
+
         val entity = GameEntity(
-            id = event.entityId,
+            id = id,
+            type = EntityType.DUNGEON,
+            name = dungeonType,
+            posX = posX,
+            posY = posY,
+            distance = calculateDistance(posX, posY)
+        )
+
+        entityManager.addOrUpdateEntity(entity)
+    }
+
+    private fun handleFishingSpot(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[2] as? Number)?.toFloat() ?: 0f
+
+        val entity = GameEntity(
+            id = id,
             type = EntityType.FISHING,
+            name = "Fishing Spot",
             posX = posX,
             posY = posY,
-            fishSize = fishSize,
-            fishTotal = fishTotal
+            distance = calculateDistance(posX, posY)
         )
-        
+
         entityManager.addOrUpdateEntity(entity)
     }
 
-    private fun handleNewMist(event: GameEvent) {
-        val posX = event.getFloat(3) ?: return
-        val posY = event.getFloat(4) ?: return
-        val enchant = event.getInt(1) ?: 0
-        
+    private fun handleMistPortal(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[2] as? Number)?.toFloat() ?: 0f
+        val mistType = parameters[3] as? String ?: "Mist"
+
         val entity = GameEntity(
-            id = event.entityId,
-            type = EntityType.MIST,
+            id = id,
+            type = EntityType.MIST_PORTAL,
+            name = mistType,
             posX = posX,
             posY = posY,
-            enchant = enchant
+            distance = calculateDistance(posX, posY)
         )
-        
+
         entityManager.addOrUpdateEntity(entity)
     }
 
-    private fun handleChangeCluster(event: GameEvent) {
-        entityManager.clearAll()
-        
-        val zoneName = event.getString(1) ?: "Unknown"
-        entityManager.setZoneName(zoneName)
+    private fun handleWispCage(event: PhotonEvent) {
+        val parameters = event.parameters ?: return
+
+        val id = parameters[0] as? Int ?: return
+        val posX = (parameters[1] as? Number)?.toFloat() ?: 0f
+        val posY = (parameters[2] as? Number)?.toFloat() ?: 0f
+
+        val entity = GameEntity(
+            id = id,
+            type = EntityType.WISP_CAGE,
+            name = "Wisp Cage",
+            posX = posX,
+            posY = posY,
+            distance = calculateDistance(posX, posY)
+        )
+
+        entityManager.addOrUpdateEntity(entity)
+    }
+
+    private fun calculateDistance(posX: Float, posY: Float): Float {
+        val dx = posX - playerPosition.first
+        val dy = posY - playerPosition.second
+        return kotlin.math.sqrt(dx * dx + dy * dy)
+    }
+
+    private fun getPlayerName(): String {
+        return ""
     }
 }
+
+data class PhotonEvent(
+    val code: Int,
+    val parameters: Map<Int, Any?>?
+)
