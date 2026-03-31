@@ -98,13 +98,9 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getInt("min_tier", 1)
         set(value) = prefs.edit().putInt("min_tier", value.coerceIn(1, 8)).apply()
 
-    var minEnchant: Int
-        get() = prefs.getInt("min_enchant", 0)
-        set(value) = prefs.edit().putInt("min_enchant", value.coerceIn(0, 4)).apply()
-
     var overlaySize: Int
-        get() = prefs.getInt("overlay_size", 300)
-        set(value) = prefs.edit().putInt("overlay_size", value.coerceIn(150, 800)).apply()
+        get() = prefs.getInt("overlay_size", 280)
+        set(value) = prefs.edit().putInt("overlay_size", value.coerceIn(150, 600)).apply()
 
     var overlayX: Int
         get() = prefs.getInt("overlay_x", 100)
