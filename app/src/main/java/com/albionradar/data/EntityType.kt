@@ -7,5 +7,7 @@ enum class EntityType {
     DUNGEON,
     CHEST,
     FISHING,
-    MIST
+    MIST,
+    MIST_PORTAL,
+    WISP_CAGE
 }
