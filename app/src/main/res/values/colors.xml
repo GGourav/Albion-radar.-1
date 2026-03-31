@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <color name="primary">#FF1E88E5</color>
+    <color name="primary_dark">#FF1565C0</color>
+    <color name="accent">#FF4CAF50</color>
+    <color name="background">#FF121212</color>
+    <color name="surface">#FF1E1E1E</color>
+    <color name="surface_variant">#FF2D2D2D</color>
+    <color name="on_surface">#FFE0E0E0</color>
+    
+    <color name="resource_wood">#FF8B4513</color>
+    <color name="resource_rock">#FF808080</color>
+    <color name="resource_fiber">#FF9370DB</color>
+    <color name="resource_hide">#FFCD853F</color>
+    <color name="resource_ore">#FFFFD700</color>
+    
+    <color name="tier_1">#FF808080</color>
+    <color name="tier_2">#FF4CAF50</color>
+    <color name="tier_3">#FF2196F3</color>
+    <color name="tier_4">#FF9C27B0</color>
+    <color name="tier_5">#FFFF9800</color>
+    <color name="tier_6">#FF607D8B</color>
+    <color name="tier_7">#FF00BCD4</color>
+    <color name="tier_8">#FFE91E63</color>
+    
+    <color name="enchant_0">#FFFFFFFF</color>
+    <color name="enchant_1">#FF4CAF50</color>
+    <color name="enchant_2">#FF2196F3</color>
+    <color name="enchant_3">#FF9C27B0</color>
+    <color name="enchant_4">#FFFF9800</color>
+    
+    <color name="player_friendly">#FF4CAF50</color>
+    <color name="player_faction">#FFFF9800</color>
+    <color name="player_hostile">#FFF44336</color>
+    <color name="player_neutral">#FF2196F3</color>
+    <color name="mob_normal">#FF9E9E9E</color>
+    <color name="mob_boss">#FFF44336</color>
+    <color name="mob_veteran">#FFFF9800</color>
+    <color name="mob_enchanted">#FF9C27B0</color>
+    <color name="dungeon">#FF00BCD4</color>
+    <color name="chest">#FFFFD700</color>
+    <color name="fishing">#FF2196F3</color>
+    <color name="mist_portal">#FF9C27B0</color>
+    
+    <color name="overlay_background">#CC000000</color>
+    <color name="grid_line">#33FFFFFF</color>
+    <color name="radar_center">#FFFF0000</color>
+</resources>
