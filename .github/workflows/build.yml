@@ -2,7 +2,6 @@
 ---
 
 ### **40. `.github/workflows/build.yml`**
-```yaml
 name: Build APK
 
 on:
