@@ -18,7 +18,6 @@ class RadarSettings private constructor(context: Context) {
         }
     }
 
-    // Display settings
     var zoomLevel: Float
         get() = prefs.getFloat("zoom_level", 1.0f)
         set(value) = prefs.edit().putFloat("zoom_level", value).apply()
@@ -31,7 +30,6 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getBoolean("show_labels", true)
         set(value) = prefs.edit().putBoolean("show_labels", value).apply()
 
-    // Alert settings
     var alertSound: Boolean
         get() = prefs.getBoolean("alert_sound", false)
         set(value) = prefs.edit().putBoolean("alert_sound", value).apply()
@@ -40,7 +38,6 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getBoolean("hostile_alert", true)
         set(value) = prefs.edit().putBoolean("hostile_alert", value).apply()
 
-    // Resource filters
     var showOre: Boolean
         get() = prefs.getBoolean("show_ore", true)
         set(value) = prefs.edit().putBoolean("show_ore", value).apply()
@@ -67,7 +64,6 @@ class RadarSettings private constructor(context: Context) {
     fun getShowFiber(): Boolean = showFiber
     fun getShowHide(): Boolean = showHide
 
-    // Mob filters
     var showNormalMobs: Boolean
         get() = prefs.getBoolean("show_normal_mobs", true)
         set(value) = prefs.edit().putBoolean("show_normal_mobs", value).apply()
@@ -84,7 +80,6 @@ class RadarSettings private constructor(context: Context) {
     fun getShowBosses(): Boolean = showBosses
     fun getShowVeterans(): Boolean = showVeterans
 
-    // Player filters
     var showPlayers: Boolean
         get() = prefs.getBoolean("show_players", true)
         set(value) = prefs.edit().putBoolean("show_players", value).apply()
@@ -96,7 +91,6 @@ class RadarSettings private constructor(context: Context) {
     fun getShowPlayers(): Boolean = showPlayers
     fun getHostileOnly(): Boolean = hostileOnly
 
-    // Other filters
     var showDungeons: Boolean
         get() = prefs.getBoolean("show_dungeons", true)
         set(value) = prefs.edit().putBoolean("show_dungeons", value).apply()
@@ -118,17 +112,14 @@ class RadarSettings private constructor(context: Context) {
     fun getShowFishing(): Boolean = showFishing
     fun getShowMist(): Boolean = showMist
 
-    // Min tier filter
     var minTier: Int
         get() = prefs.getInt("min_tier", 1)
         set(value) = prefs.edit().putInt("min_tier", value.coerceIn(1, 8)).apply()
 
-    // Min enchant filter
     var minEnchant: Int
         get() = prefs.getInt("min_enchant", 0)
         set(value) = prefs.edit().putInt("min_enchant", value.coerceIn(0, 4)).apply()
 
-    // Overlay settings
     var overlaySize: Int
         get() = prefs.getInt("overlay_size", 300)
         set(value) = prefs.edit().putInt("overlay_size", value.coerceIn(150, 800)).apply()
@@ -141,8 +132,33 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getInt("overlay_y", 500)
         set(value) = prefs.edit().putInt("overlay_y", value).apply()
 
-    // Player name
     var playerName: String
         get() = prefs.getString("player_name", "") ?: ""
         set(value) = prefs.edit().putString("player_name", value).apply()
+
+    fun shouldShowPlayer(faction: Int): Boolean {
+        if (!showPlayers) return false
+        if (hostileOnly && faction != 255) return false
+        return true
+    }
+
+    fun shouldShowResource(resourceType: String): Boolean {
+        return when (resourceType.uppercase()) {
+            "ORE" -> showOre
+            "WOOD", "LOG", "LOGS" -> showWood
+            "ROCK" -> showRock
+            "FIBER" -> showFiber
+            "HIDE" -> showHide
+            else -> true
+        }
+    }
+
+    fun shouldShowMob(enemyType: Int): Boolean {
+        return when (enemyType) {
+            6 -> showBosses
+            5 -> showVeterans
+            4 -> showVeterans
+            else -> showNormalMobs
+        }
+    }
 }
