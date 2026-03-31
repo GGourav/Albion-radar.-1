@@ -58,12 +58,6 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getBoolean("show_hide", true)
         set(value) = prefs.edit().putBoolean("show_hide", value).apply()
 
-    fun getShowOre(): Boolean = showOre
-    fun getShowWood(): Boolean = showWood
-    fun getShowRock(): Boolean = showRock
-    fun getShowFiber(): Boolean = showFiber
-    fun getShowHide(): Boolean = showHide
-
     var showNormalMobs: Boolean
         get() = prefs.getBoolean("show_normal_mobs", true)
         set(value) = prefs.edit().putBoolean("show_normal_mobs", value).apply()
@@ -76,10 +70,6 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getBoolean("show_veterans", true)
         set(value) = prefs.edit().putBoolean("show_veterans", value).apply()
 
-    fun getShowNormalMobs(): Boolean = showNormalMobs
-    fun getShowBosses(): Boolean = showBosses
-    fun getShowVeterans(): Boolean = showVeterans
-
     var showPlayers: Boolean
         get() = prefs.getBoolean("show_players", true)
         set(value) = prefs.edit().putBoolean("show_players", value).apply()
@@ -87,9 +77,6 @@ class RadarSettings private constructor(context: Context) {
     var hostileOnly: Boolean
         get() = prefs.getBoolean("hostile_only", false)
         set(value) = prefs.edit().putBoolean("hostile_only", value).apply()
-
-    fun getShowPlayers(): Boolean = showPlayers
-    fun getHostileOnly(): Boolean = hostileOnly
 
     var showDungeons: Boolean
         get() = prefs.getBoolean("show_dungeons", true)
@@ -106,11 +93,6 @@ class RadarSettings private constructor(context: Context) {
     var showMist: Boolean
         get() = prefs.getBoolean("show_mist", true)
         set(value) = prefs.edit().putBoolean("show_mist", value).apply()
-
-    fun getShowDungeons(): Boolean = showDungeons
-    fun getShowChests(): Boolean = showChests
-    fun getShowFishing(): Boolean = showFishing
-    fun getShowMist(): Boolean = showMist
 
     var minTier: Int
         get() = prefs.getInt("min_tier", 1)
