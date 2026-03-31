@@ -1,0 +1,45 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+*.apk
+*.ap_
+*.dex
+*.class
+gen/
+bin/
+out/
+.navigation/
+*.log
+
+# Gradle
+.gradle/
+build/
+gradle-app.proguard
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Signing
+*.jks
+*.keystore
+keystore.properties
+release.properties
+
+# Built APKs
+app/build/
+app/release/
