@@ -68,6 +68,12 @@ sealed class PhotonValue {
         is ArrayValue -> value
         else -> null
     }
+
+    fun asDictionary(): Map<Any, PhotonValue>? = when (this) {
+        is DictionaryValue -> value
+        is HashtableValue -> value.mapKeys { it.key.asInt() ?: it.key.asString() ?: it.key }
+        else -> null
+    }
     
     override fun toString(): String = when (this) {
         is NullValue -> "null"
