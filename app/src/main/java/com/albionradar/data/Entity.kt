@@ -3,36 +3,35 @@ package com.albionradar.data
 data class GameEntity(
     val id: Int,
     val type: EntityType,
-    val name: String = "",
+    val name: String,
+    val posX: Float,
+    val posY: Float,
+    val displayX: Float = posX,
+    val displayY: Float = posY,
+    val health: Int = 100,
+    val maxHealth: Int = 100,
+    val faction: Int = 0,
     val guild: String = "",
     val alliance: String = "",
-    val faction: Int = 0,
-    val mounted: Boolean = false,
-    val posX: Float = 0f,
-    val posY: Float = 0f,
-    var displayX: Float = posX,
-    var displayY: Float = posY,
-    val tier: Int = 1,
-    val enchant: Int = 0,
+    val tier: Int = 0,
     val size: Int = 0,
-    val health: Int = 0,
-    val maxHealth: Int = 1,
-    val resourceType: String = "",
-    val enemyType: Int = 0,
-    val displayName: String = "",
-    val dungeonType: Int = 0,
-    val chestRarity: String = "common",
-    val fishSize: Int = 0,
-    val fishTotal: Int = 0,
-    val isHostile: Boolean = false,
+    val enchant: Int = 0,
+    val distance: Float = 0f,
     val lastUpdateTime: Long = System.currentTimeMillis()
 ) {
-    val distance: Float
-        get() = kotlin.math.sqrt(posX * posX + posY * posY)
-    
-    val healthPercent: Int
-        get() = if (maxHealth > 0) (health * 100 / maxHealth) else 0
-    
     val isStale: Boolean
-        get() = System.currentTimeMillis() - lastUpdateTime > 30000
+        get() = System.currentTimeMillis() - lastUpdateTime > 30000 // 30 seconds
+
+    val healthPercent: Float
+        get() = if (maxHealth > 0) health.toFloat() / maxHealth else 1f
+
+    val displayName: String
+        get() = when (type) {
+            EntityType.RESOURCE -> {
+                val tierStr = if (tier > 0) "T$tier" else ""
+                val enchantStr = if (enchant > 0) ".$enchant" else ""
+                "$name $tierStr$enchantStr".trim()
+            }
+            else -> name
+        }
 }
