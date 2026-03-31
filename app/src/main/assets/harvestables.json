@@ -1,0 +1,50 @@
+{
+  "WOOD": [
+    {"tier": 1, "enchant": 0}, {"tier": 1, "enchant": 1}, {"tier": 1, "enchant": 2}, {"tier": 1, "enchant": 3}, {"tier": 1, "enchant": 4},
+    {"tier": 2, "enchant": 0}, {"tier": 2, "enchant": 1}, {"tier": 2, "enchant": 2}, {"tier": 2, "enchant": 3}, {"tier": 2, "enchant": 4},
+    {"tier": 3, "enchant": 0}, {"tier": 3, "enchant": 1}, {"tier": 3, "enchant": 2}, {"tier": 3, "enchant": 3}, {"tier": 3, "enchant": 4},
+    {"tier": 4, "enchant": 0}, {"tier": 4, "enchant": 1}, {"tier": 4, "enchant": 2}, {"tier": 4, "enchant": 3}, {"tier": 4, "enchant": 4},
+    {"tier": 5, "enchant": 0}, {"tier": 5, "enchant": 1}, {"tier": 5, "enchant": 2}, {"tier": 5, "enchant": 3}, {"tier": 5, "enchant": 4},
+    {"tier": 6, "enchant": 0}, {"tier": 6, "enchant": 1}, {"tier": 6, "enchant": 2}, {"tier": 6, "enchant": 3}, {"tier": 6, "enchant": 4},
+    {"tier": 7, "enchant": 0}, {"tier": 7, "enchant": 1}, {"tier": 7, "enchant": 2}, {"tier": 7, "enchant": 3}, {"tier": 7, "enchant": 4},
+    {"tier": 8, "enchant": 0}, {"tier": 8, "enchant": 1}, {"tier": 8, "enchant": 2}, {"tier": 8, "enchant": 3}, {"tier": 8, "enchant": 4}
+  ],
+  "ROCK": [
+    {"tier": 1, "enchant": 0}, {"tier": 1, "enchant": 1}, {"tier": 1, "enchant": 2}, {"tier": 1, "enchant": 3}, {"tier": 1, "enchant": 4},
+    {"tier": 2, "enchant": 0}, {"tier": 2, "enchant": 1}, {"tier": 2, "enchant": 2}, {"tier": 2, "enchant": 3}, {"tier": 2, "enchant": 4},
+    {"tier": 3, "enchant": 0}, {"tier": 3, "enchant": 1}, {"tier": 3, "enchant": 2}, {"tier": 3, "enchant": 3}, {"tier": 3, "enchant": 4},
+    {"tier": 4, "enchant": 0}, {"tier": 4, "enchant": 1}, {"tier": 4, "enchant": 2}, {"tier": 4, "enchant": 3}, {"tier": 4, "enchant": 4},
+    {"tier": 5, "enchant": 0}, {"tier": 5, "enchant": 1}, {"tier": 5, "enchant": 2}, {"tier": 5, "enchant": 3}, {"tier": 5, "enchant": 4},
+    {"tier": 6, "enchant": 0}, {"tier": 6, "enchant": 1}, {"tier": 6, "enchant": 2}, {"tier": 6, "enchant": 3}, {"tier": 6, "enchant": 4},
+    {"tier": 7, "enchant": 0}, {"tier": 7, "enchant": 1}, {"tier": 7, "enchant": 2}, {"tier": 7, "enchant": 3}, {"tier": 7, "enchant": 4},
+    {"tier": 8, "enchant": 0}, {"tier": 8, "enchant": 1}, {"tier": 8, "enchant": 2}, {"tier": 8, "enchant": 3}, {"tier": 8, "enchant": 4}
+  ],
+  "FIBER": [
+    {"tier": 2, "enchant": 0}, {"tier": 2, "enchant": 1}, {"tier": 2, "enchant": 2}, {"tier": 2, "enchant": 3}, {"tier": 2, "enchant": 4},
+    {"tier": 3, "enchant": 0}, {"tier": 3, "enchant": 1}, {"tier": 3, "enchant": 2}, {"tier": 3, "enchant": 3}, {"tier": 3, "enchant": 4},
+    {"tier": 4, "enchant": 0}, {"tier": 4, "enchant": 1}, {"tier": 4, "enchant": 2}, {"tier": 4, "enchant": 3}, {"tier": 4, "enchant": 4},
+    {"tier": 5, "enchant": 0}, {"tier": 5, "enchant": 1}, {"tier": 5, "enchant": 2}, {"tier": 5, "enchant": 3}, {"tier": 5, "enchant": 4},
+    {"tier": 6, "enchant": 0}, {"tier": 6, "enchant": 1}, {"tier": 6, "enchant": 2}, {"tier": 6, "enchant": 3}, {"tier": 6, "enchant": 4},
+    {"tier": 7, "enchant": 0}, {"tier": 7, "enchant": 1}, {"tier": 7, "enchant": 2}, {"tier": 7, "enchant": 3}, {"tier": 7, "enchant": 4},
+    {"tier": 8, "enchant": 0}, {"tier": 8, "enchant": 1}, {"tier": 8, "enchant": 2}, {"tier": 8, "enchant": 3}, {"tier": 8, "enchant": 4}
+  ],
+  "HIDE": [
+    {"tier": 1, "enchant": 0}, {"tier": 1, "enchant": 1}, {"tier": 1, "enchant": 2}, {"tier": 1, "enchant": 3}, {"tier": 1, "enchant": 4},
+    {"tier": 2, "enchant": 0}, {"tier": 2, "enchant": 1}, {"tier": 2, "enchant": 2}, {"tier": 2, "enchant": 3}, {"tier": 2, "enchant": 4},
+    {"tier": 3, "enchant": 0}, {"tier": 3, "enchant": 1}, {"tier": 3, "enchant": 2}, {"tier": 3, "enchant": 3}, {"tier": 3, "enchant": 4},
+    {"tier": 4, "enchant": 0}, {"tier": 4, "enchant": 1}, {"tier": 4, "enchant": 2}, {"tier": 4, "enchant": 3}, {"tier": 4, "enchant": 4},
+    {"tier": 5, "enchant": 0}, {"tier": 5, "enchant": 1}, {"tier": 5, "enchant": 2}, {"tier": 5, "enchant": 3}, {"tier": 5, "enchant": 4},
+    {"tier": 6, "enchant": 0}, {"tier": 6, "enchant": 1}, {"tier": 6, "enchant": 2}, {"tier": 6, "enchant": 3}, {"tier": 6, "enchant": 4},
+    {"tier": 7, "enchant": 0}, {"tier": 7, "enchant": 1}, {"tier": 7, "enchant": 2}, {"tier": 7, "enchant": 3}, {"tier": 7, "enchant": 4},
+    {"tier": 8, "enchant": 0}, {"tier": 8, "enchant": 1}, {"tier": 8, "enchant": 2}, {"tier": 8, "enchant": 3}, {"tier": 8, "enchant": 4}
+  ],
+  "ORE": [
+    {"tier": 2, "enchant": 0}, {"tier": 2, "enchant": 1}, {"tier": 2, "enchant": 2}, {"tier": 2, "enchant": 3}, {"tier": 2, "enchant": 4},
+    {"tier": 3, "enchant": 0}, {"tier": 3, "enchant": 1}, {"tier": 3, "enchant": 2}, {"tier": 3, "enchant": 3}, {"tier": 3, "enchant": 4},
+    {"tier": 4, "enchant": 0}, {"tier": 4, "enchant": 1}, {"tier": 4, "enchant": 2}, {"tier": 4, "enchant": 3}, {"tier": 4, "enchant": 4},
+    {"tier": 5, "enchant": 0}, {"tier": 5, "enchant": 1}, {"tier": 5, "enchant": 2}, {"tier": 5, "enchant": 3}, {"tier": 5, "enchant": 4},
+    {"tier": 6, "enchant": 0}, {"tier": 6, "enchant": 1}, {"tier": 6, "enchant": 2}, {"tier": 6, "enchant": 3}, {"tier": 6, "enchant": 4},
+    {"tier": 7, "enchant": 0}, {"tier": 7, "enchant": 1}, {"tier": 7, "enchant": 2}, {"tier": 7, "enchant": 3}, {"tier": 7, "enchant": 4},
+    {"tier": 8, "enchant": 0}, {"tier": 8, "enchant": 1}, {"tier": 8, "enchant": 2}, {"tier": 8, "enchant": 3}, {"tier": 8, "enchant": 4}
+  ]
+}
