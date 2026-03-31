@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlayRoot"
+    android:layout_width="250dp"
+    android:layout_height="250dp"
+    android:background="@color/overlay_background"
+    android:alpha="0.85">
+
+    <com.albionradar.ui.RadarView
+        android:id="@+id/overlayRadarView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageView
+        android:id="@+id/resizeHandle"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="bottom|end"
+        android:src="@android:drawable/ic_menu_crop"
+        android:contentDescription="Resize"
+        android:padding="4dp" />
+
+</FrameLayout>
