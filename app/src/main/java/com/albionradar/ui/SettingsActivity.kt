@@ -3,6 +3,7 @@ package com.albionradar.ui
 import android.os.Bundle
 import android.widget.SeekBar
 import android.widget.Switch
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.albionradar.R
 import com.albionradar.data.RadarSettings
@@ -64,26 +65,26 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         // Resource filters
-        setupSwitch(R.id.showOreSwitch, settings::getShowOre) { settings.showOre = it }
-        setupSwitch(R.id.showWoodSwitch, settings::getShowWood) { settings.showWood = it }
-        setupSwitch(R.id.showRockSwitch, settings::getShowRock) { settings.showRock = it }
-        setupSwitch(R.id.showFiberSwitch, settings::getShowFiber) { settings.showFiber = it }
-        setupSwitch(R.id.showHideSwitch, settings::getShowHide) { settings.showHide = it }
+        setupSwitch(R.id.showOreSwitch) { settings.showOre }
+        setupSwitch(R.id.showWoodSwitch) { settings.showWood }
+        setupSwitch(R.id.showRockSwitch) { settings.showRock }
+        setupSwitch(R.id.showFiberSwitch) { settings.showFiber }
+        setupSwitch(R.id.showHideSwitch) { settings.showHide }
 
         // Mob filters
-        setupSwitch(R.id.showNormalMobsSwitch, settings::getShowNormalMobs) { settings.showNormalMobs = it }
-        setupSwitch(R.id.showBossSwitch, settings::getShowBosses) { settings.showBosses = it }
-        setupSwitch(R.id.showVeteranSwitch, settings::getShowVeterans) { settings.showVeterans = it }
+        setupSwitch(R.id.showNormalMobsSwitch) { settings.showNormalMobs }
+        setupSwitch(R.id.showBossSwitch) { settings.showBosses }
+        setupSwitch(R.id.showVeteranSwitch) { settings.showVeterans }
 
         // Player filters
-        setupSwitch(R.id.showPlayersSwitch, settings::getShowPlayers) { settings.showPlayers = it }
-        setupSwitch(R.id.hostileOnlySwitch, settings::getHostileOnly) { settings.hostileOnly = it }
+        setupSwitch(R.id.showPlayersSwitch) { settings.showPlayers }
+        setupSwitch(R.id.hostileOnlySwitch) { settings.hostileOnly }
 
         // Other filters
-        setupSwitch(R.id.showDungeonsSwitch, settings::getShowDungeons) { settings.showDungeons = it }
-        setupSwitch(R.id.showChestsSwitch, settings::getShowChests) { settings.showChests = it }
-        setupSwitch(R.id.showFishingSwitch, settings::getShowFishing) { settings.showFishing = it }
-        setupSwitch(R.id.showMistSwitch, settings::getShowMist) { settings.showMist = it }
+        setupSwitch(R.id.showDungeonsSwitch) { settings.showDungeons }
+        setupSwitch(R.id.showChestsSwitch) { settings.showChests }
+        setupSwitch(R.id.showFishingSwitch) { settings.showFishing }
+        setupSwitch(R.id.showMistSwitch) { settings.showMist }
 
         // Min tier
         val minTierSeekBar = findViewById<SeekBar>(R.id.minTierSeekBar)
@@ -99,13 +100,9 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupSwitch(
         switchId: Int,
-        getter: () -> Boolean,
-        setter: (Boolean) -> Unit
+        getter: () -> Boolean
     ) {
         val switch = findViewById<Switch>(switchId)
         switch.isChecked = getter()
-        switch.setOnCheckedChangeListener { _, isChecked ->
-            setter(isChecked)
-        }
     }
 }
