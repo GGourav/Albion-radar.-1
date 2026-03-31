@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.albionradar.R
 import com.albionradar.data.GameEntity
+import com.albionradar.data.EntityType
 
 class EntityAdapter : ListAdapter<GameEntity, EntityAdapter.EntityViewHolder>(EntityDiffCallback()) {
 
@@ -21,9 +22,7 @@ class EntityAdapter : ListAdapter<GameEntity, EntityAdapter.EntityViewHolder>(En
         holder.bind(entity)
     }
 
-    class EntityViewHolder(
-        private val view: android.view.View
-    ) : RecyclerView.ViewHolder(view) {
+    class EntityViewHolder(private val view: android.view.View) : RecyclerView.ViewHolder(view) {
 
         private val text1: android.widget.TextView = view.findViewById(android.R.id.text1)
         private val text2: android.widget.TextView = view.findViewById(android.R.id.text2)
@@ -34,22 +33,23 @@ class EntityAdapter : ListAdapter<GameEntity, EntityAdapter.EntityViewHolder>(En
                 append("T${entity.tier}")
                 if (entity.enchant > 0) append(".${entity.enchant}")
                 append(" | Dist: ${entity.distance.toInt()}m")
-                if (entity.type == com.albionradar.data.EntityType.PLAYER) {
+                if (entity.type == EntityType.PLAYER) {
                     append(" | ${entity.guild}")
                 }
-                if (entity.type == com.albionradar.data.EntityType.MOB) {
+                if (entity.type == EntityType.MOB) {
                     append(" | HP: ${entity.healthPercent}%")
                 }
             }
 
             val color = when (entity.type) {
-                com.albionradar.data.EntityType.RESOURCE -> getResourceColor(entity.resourceType)
-                com.albionradar.data.EntityType.MOB -> getMobColor(entity.enemyType)
-                com.albionradar.data.EntityType.PLAYER -> getPlayerColor(entity.faction)
-                com.albionradar.data.EntityType.DUNGEON -> view.context.getColor(R.color.dungeon)
-                com.albionradar.data.EntityType.CHEST -> view.context.getColor(R.color.chest)
-                com.albionradar.data.EntityType.FISHING -> view.context.getColor(R.color.fishing)
-                com.albionradar.data.EntityType.MIST -> view.context.getColor(R.color.mist_portal)
+                EntityType.RESOURCE -> getResourceColor(entity.resourceType)
+                EntityType.MOB -> getMobColor(entity.enemyType)
+                EntityType.PLAYER -> getPlayerColor(entity.faction)
+                EntityType.DUNGEON -> view.context.getColor(R.color.dungeon)
+                EntityType.CHEST -> view.context.getColor(R.color.chest)
+                EntityType.FISHING -> view.context.getColor(R.color.fishing)
+                EntityType.MIST, EntityType.MIST_PORTAL -> view.context.getColor(R.color.mist_portal)
+                EntityType.WISP_CAGE -> view.context.getColor(R.color.mist_portal)
             }
             text1.setTextColor(color)
             text2.setTextColor(view.context.getColor(R.color.on_surface))
@@ -58,7 +58,7 @@ class EntityAdapter : ListAdapter<GameEntity, EntityAdapter.EntityViewHolder>(En
         private fun getResourceColor(type: String): Int {
             return when (type.uppercase()) {
                 "ORE" -> view.context.getColor(R.color.resource_ore)
-                "WOOD", "LOG" -> view.context.getColor(R.color.resource_wood)
+                "WOOD", "LOG", "LOGS" -> view.context.getColor(R.color.resource_wood)
                 "ROCK" -> view.context.getColor(R.color.resource_rock)
                 "FIBER" -> view.context.getColor(R.color.resource_fiber)
                 "HIDE" -> view.context.getColor(R.color.resource_hide)
