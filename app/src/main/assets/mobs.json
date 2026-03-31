@@ -1,0 +1,23 @@
+[
+  {"uniqueName":"T3_MOB_TR_HERETIC_MAGE_BOSS","tier":3,"category":"boss","namelocatag":"@MOB_HERETIC_MAGE_BOSS","lootType":null,"lootTier":null},
+  {"uniqueName":"T4_MOB_HIDE_SWAMP_MONITORLIZARD","tier":4,"category":"standard","namelocatag":"@MOB_MONITOR_LIZARD","lootType":"HIDE","lootTier":4},
+  {"uniqueName":"T5_MOB_FIBER_SWAMP_GUARDIAN","tier":5,"category":"boss","namelocatag":"@MOB_SWAMP_GUARDIAN","lootType":"FIBER","lootTier":5},
+  {"uniqueName":"T6_MOB_WOOD_FOREST_ENT","tier":6,"category":"boss","namelocatag":"@MOB_FOREST_ENT","lootType":"WOOD","lootTier":6},
+  {"uniqueName":"T7_MOB_ORE_MOUNTAIN_GOLEM","tier":7,"category":"boss","namelocatag":"@MOB_MOUNTAIN_GOLEM","lootType":"ORE","lootTier":7},
+  {"uniqueName":"T8_MOB_ROCK_MOUNTAIN_ELEMENTAL","tier":8,"category":"boss","namelocatag":"@MOB_ROCK_ELEMENTAL","lootType":"ROCK","lootTier":8},
+  {"uniqueName":"T4_MOB_TR_SILVER_HERETIC_SHADOWMASK_BOSS","tier":4,"category":"boss","namelocatag":"@MOB_HERETIC_SHADOWMASK_VETERAN_BOSS","lootType":null,"lootTier":null},
+  {"uniqueName":"T5_MOB_TR_SILVER_HERETIC_SHADOWMASK_BOSS","tier":5,"category":"boss","namelocatag":"@MOB_HERETIC_SHADOWMASK_VETERAN_BOSS","lootType":null,"lootTier":null},
+  {"uniqueName":"T6_MOB_TR_SILVER_HERETIC_SHADOWMASK_BOSS","tier":6,"category":"boss","namelocatag":"@MOB_HERETIC_SHADOWMASK_VETERAN_BOSS","lootType":null,"lootTier":null},
+  {"uniqueName":"T4_MOB_RD_AVALON_PRIEST_ELITE_BOSS","tier":4,"category":"rd_elite","namelocatag":"@MOB_AVALON_PRIEST","lootType":null,"lootTier":null},
+  {"uniqueName":"T5_MOB_RD_AVALON_PRIEST_ELITE_BOSS","tier":5,"category":"rd_elite","namelocatag":"@MOB_AVALON_PRIEST","lootType":null,"lootTier":null},
+  {"uniqueName":"T6_MOB_RD_AVALON_PRIEST_ELITE_BOSS","tier":6,"category":"rd_elite","namelocatag":"@MOB_AVALON_PRIEST","lootType":null,"lootTier":null},
+  {"uniqueName":"T7_MOB_RD_AVALON_PRIEST_ELITE_BOSS","tier":7,"category":"rd_elite","namelocatag":"@MOB_AVALON_PRIEST","lootType":null,"lootTier":null},
+  {"uniqueName":"T8_MOB_RD_AVALON_PRIEST_ELITE_BOSS","tier":8,"category":"rd_elite","namelocatag":"@MOB_AVALON_PRIEST","lootType":null,"lootTier":null},
+  {"uniqueName":"T4_MOB_UNDEAD_ARCHER","tier":4,"category":"standard","namelocatag":"@MOB_UNDEAD_ARCHER","lootType":null,"lootTier":null},
+  {"uniqueName":"T5_MOB_UNDEAD_ARCHER","tier":5,"category":"standard","namelocatag":"@MOB_UNDEAD_ARCHER","lootType":null,"lootTier":null},
+  {"uniqueName":"T6_MOB_UNDEAD_ARCHER","tier":6,"category":"standard","namelocatag":"@MOB_UNDEAD_ARCHER","lootType":null,"lootTier":null},
+  {"uniqueName":"T4_MOB_KEEPER_BERSERKER","tier":4,"category":"standard","namelocatag":"@MOB_KEEPER_BERSERKER","lootType":null,"lootTier":null},
+  {"uniqueName":"T5_MOB_KEEPER_BERSERKER","tier":5,"category":"standard","namelocatag":"@MOB_KEEPER_BERSERKER","lootType":null,"lootTier":null},
+  {"uniqueName":"T6_MOB_KEEPER_BERSERKER","tier":6,"category":"standard","namelocatag":"@MOB_KEEPER_BERSERKER","lootType":null,"lootTier":null},
+  {"uniqueName":"MOB_UNIQUE_MISTS_PORTAL_WISP","tier":4,"category":"rd_solo","namelocatag":"@MOB_UNIQUE_MISTS_PORTAL_WISP_SOLO","lootType":null,"lootTier":null}
+]
