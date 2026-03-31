@@ -112,7 +112,6 @@ class MainActivity : AppCompatActivity() {
     private fun observeEntities() {
         lifecycleScope.launch {
             entityManager.entities.collect { entities ->
-                radarView.updateEntities(entities)
                 entityCountText.text = "Entities: ${entities.size}"
             }
         }
