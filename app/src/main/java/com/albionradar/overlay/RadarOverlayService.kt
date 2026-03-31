@@ -2,8 +2,10 @@ package com.albionradar.overlay
 
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
 import android.view.MotionEvent
@@ -30,6 +32,7 @@ class RadarOverlayService : android.app.Service() {
     private var overlayView: FrameLayout? = null
     private var radarView: RadarView? = null
     private var isShowing = false
+    private var layoutParams: WindowManager.LayoutParams? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -54,7 +57,7 @@ class RadarOverlayService : android.app.Service() {
         val notification = createNotification()
         startForeground(2, notification)
 
-        val params = WindowManager.LayoutParams(
+        layoutParams = WindowManager.LayoutParams(
             OVERLAY_SIZE,
             OVERLAY_SIZE,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -87,13 +90,13 @@ class RadarOverlayService : android.app.Service() {
         }
         root.addView(resizeHandle)
 
-        val moveTouchListener = MoveTouchListener(params)
+        val moveTouchListener = MoveTouchListener(layoutParams!!)
         root.setOnTouchListener(moveTouchListener)
 
         overlayView = root
 
         try {
-            windowManager?.addView(overlayView, params)
+            windowManager?.addView(overlayView, layoutParams)
             isShowing = true
 
             val entityManager = EntityManager.getInstance()
@@ -119,6 +122,7 @@ class RadarOverlayService : android.app.Service() {
         }
         overlayView = null
         radarView = null
+        layoutParams = null
         isShowing = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -189,14 +193,9 @@ class RadarOverlayService : android.app.Service() {
 
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-            if (event == null || overlayView == null) return false
+            if (event == null || overlayView == null || layoutParams == null) return false
 
-            val params = windowManager?.let {
-                overlayView?.let { view ->
-                    @Suppress("DEPRECATION")
-                    it.getViewLayout(view) ?: return false
-                }
-            } ?: return false
+            val params = layoutParams ?: return false
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
