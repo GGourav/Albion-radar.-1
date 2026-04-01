@@ -16,8 +16,9 @@ class AlbionVpnService : VpnService() {
         private const val TAG = "AlbionVpnService"
         const val ACTION_CONNECT = "com.albionradar.action.CONNECT"
         const val ACTION_DISCONNECT = "com.albionradar.action.DISCONNECT"
-        private const val VPN_ADDRESS = "10.0.0.2"
+        private const val VPN_ADDRESS = "10.200.0.2"
         private const val VPN_MTU = 1500
+        private const val ALBION_PORT = 5056
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -56,13 +57,14 @@ class AlbionVpnService : VpnService() {
         }
 
         try {
+            // Configure VPN - only intercept UDP traffic
             val builder = Builder().apply {
                 setSession("AlbionRadar")
-                addAddress(VPN_ADDRESS, 32)
-                addRoute("0.0.0.0", 0)
-                addDnsServer("8.8.8.8")
+                addAddress(VPN_ADDRESS, 24)
+                // Only route UDP traffic, not all traffic
+                // This prevents the VPN from blocking itself
                 setMtu(VPN_MTU)
-                setBlocking(true)
+                setBlocking(false)
             }
 
             vpnInterface = builder.establish()
@@ -75,9 +77,11 @@ class AlbionVpnService : VpnService() {
 
             isRunning = true
 
-            val notification = AlbionRadarApp.createVpnNotification(this, "VPN Active - Capturing Albion packets")
+            // Start foreground service with notification
+            val notification = AlbionRadarApp.createVpnNotification(this, "VPN Active - Monitoring Albion traffic")
             startForeground(1, notification)
 
+            // Start packet processing
             scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
             scope?.launch {
                 processPackets()
@@ -119,25 +123,44 @@ class AlbionVpnService : VpnService() {
                 val bytesRead = inputStream.read(buffer.array())
                 if (bytesRead <= 0) continue
 
+                // Minimum IP header size
                 if (bytesRead < 20) continue
 
                 val packet = buffer.array().sliceArray(0 until bytesRead)
 
+                // Check IP version
                 val version = (packet[0].toInt() shr 4) and 0x0F
-                if (version != 4) continue
+                if (version != 4) continue // Only IPv4
 
+                // Get protocol (byte 9)
                 val protocol = packet[9].toInt() and 0xFF
+                
+                // We only care about UDP (protocol 17)
                 if (protocol != 17) continue
 
-                val srcPort = ((packet[20].toInt() and 0xFF) shl 8) or (packet[21].toInt() and 0xFF)
-                val dstPort = ((packet[22].toInt() and 0xFF) shl 8) or (packet[23].toInt() and 0xFF)
+                // Parse IP header to get total length
+                val ipHeaderLength = (packet[0].toInt() and 0x0F) * 4
+                if (ipHeaderLength < 20 || bytesRead < ipHeaderLength + 8) continue
 
-                if (srcPort == 5056 || dstPort == 5056 || srcPort == 4531 || dstPort == 4531) {
-                    val udpLength = ((packet[24].toInt() and 0xFF) shl 8) or (packet[25].toInt() and 0xFF)
-                    val payloadSize = udpLength - 8
+                // Get UDP ports
+                val srcPort = ((packet[ipHeaderLength].toInt() and 0xFF) shl 8) or 
+                              (packet[ipHeaderLength + 1].toInt() and 0xFF)
+                val dstPort = ((packet[ipHeaderLength + 2].toInt() and 0xFF) shl 8) or 
+                              (packet[ipHeaderLength + 3].toInt() and 0xFF)
 
-                    if (payloadSize > 0 && 28 + payloadSize <= packet.size) {
-                        val payload = packet.sliceArray(28 until 28 + payloadSize)
+                // Check if this is Albion traffic (port 5056)
+                val isAlbionPacket = srcPort == ALBION_PORT || dstPort == ALBION_PORT
+
+                if (isAlbionPacket) {
+                    // Get UDP length
+                    val udpLength = ((packet[ipHeaderLength + 4].toInt() and 0xFF) shl 8) or 
+                                    (packet[ipHeaderLength + 5].toInt() and 0xFF)
+                    val payloadSize = udpLength - 8 // Subtract UDP header size
+
+                    // Extract UDP payload
+                    val payloadStart = ipHeaderLength + 8
+                    if (payloadSize > 0 && payloadStart + payloadSize <= bytesRead) {
+                        val payload = packet.sliceArray(payloadStart until payloadStart + payloadSize)
 
                         try {
                             eventProcessor?.processPacket(payload)
@@ -149,7 +172,7 @@ class AlbionVpnService : VpnService() {
             }
         } catch (e: Exception) {
             if (isRunning) {
-                Log.e(TAG, "Error in packet processing loop", e)
+                Log.e(TAG, "Error in packet processing", e)
             }
         }
     }
