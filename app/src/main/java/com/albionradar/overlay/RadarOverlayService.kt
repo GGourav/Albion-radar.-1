@@ -13,9 +13,9 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.*
 import com.albionradar.AlbionRadarApp
-import com.albionradar.R
 import com.albionradar.data.RadarSettings
 import com.albionradar.ui.RadarView
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -30,19 +30,20 @@ class RadarOverlayService : android.app.Service() {
     }
 
     private var windowManager: WindowManager? = null
-    private var overlayView: FrameLayout? = null
+    private var mainOverlayView: FrameLayout? = null
     private var radarView: RadarView? = null
-    private var settingsPanel: LinearLayout? = null
+    private var settingsScrollView: ScrollView? = null
+    private var radarContainer: FrameLayout? = null
     private var isShowing = false
     private var isSettingsVisible = false
     private var layoutParams: WindowManager.LayoutParams? = null
     private var currentSize = DEFAULT_SIZE
-    private var sizeDisplay: TextView? = null
-    private var tierDisplay: TextView? = null
+    private lateinit var settings: RadarSettings
 
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        settings = RadarSettings.getInstance(this)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -59,7 +60,6 @@ class RadarOverlayService : android.app.Service() {
     private fun showOverlay() {
         if (isShowing) return
 
-        val settings = RadarSettings.getInstance(this)
         currentSize = settings.overlaySize
 
         val notification = createNotification()
@@ -79,39 +79,10 @@ class RadarOverlayService : android.app.Service() {
             y = settings.overlayY
         }
 
-        val root = FrameLayout(this)
-
-        val radarContainer = FrameLayout(this).apply {
-            setBackgroundColor(Color.TRANSPARENT)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        radarView = RadarView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-        radarContainer.addView(radarView)
-
-        val controlsContainer = createControlsPanel()
-        radarContainer.addView(controlsContainer)
-
-        root.addView(radarContainer)
-
-        settingsPanel = createSettingsPanel()
-        settingsPanel?.visibility = View.GONE
-        root.addView(settingsPanel)
-
-        root.setOnTouchListener(MoveTouchListener())
-
-        overlayView = root
+        mainOverlayView = createMainView()
 
         try {
-            windowManager?.addView(overlayView, layoutParams)
+            windowManager?.addView(mainOverlayView, layoutParams)
             isShowing = true
             radarView?.startRendering()
         } catch (e: Exception) {
@@ -120,179 +91,152 @@ class RadarOverlayService : android.app.Service() {
         }
     }
 
-    private fun createControlsPanel(): FrameLayout {
+    private fun createMainView(): FrameLayout {
+        return FrameLayout(this).apply {
+            // Root container - transparent background
+            setBackgroundColor(Color.TRANSPARENT)
+            
+            // Radar container
+            radarContainer = FrameLayout(context).apply {
+                setBackgroundColor(Color.TRANSPARENT)
+                addView(createRadarView())
+                addView(createControlButtons())
+            }
+            addView(radarContainer)
+
+            // Settings panel (initially hidden)
+            settingsScrollView = ScrollView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+                setBackgroundColor(0xDD000000.toInt())
+                isVerticalScrollBarEnabled = true
+                scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+                
+                addView(createSettingsContent())
+                visibility = View.GONE
+            }
+            addView(settingsScrollView)
+        }
+    }
+
+    private fun createRadarView(): RadarView {
+        radarView = RadarView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+        return radarView!!
+    }
+
+    private fun createControlButtons(): FrameLayout {
         return FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
 
-            val settingsBtn = ImageButton(context).apply {
-                setImageResource(android.R.drawable.ic_menu_manage)
-                setBackgroundColor(Color.TRANSPARENT)
-                setColorFilter(Color.WHITE)
-                layoutParams = FrameLayout.LayoutParams(40, 40).apply {
+            // Settings button (top-left)
+            addView(createImageButton(android.R.drawable.ic_menu_manage, Color.WHITE) {
+                toggleSettings()
+            }.apply {
+                layoutParams = FrameLayout.LayoutParams(dp(36), dp(36)).apply {
                     gravity = Gravity.TOP or Gravity.START
-                    marginStart = 4
-                    topMargin = 4
+                    leftMargin = dp(4)
+                    topMargin = dp(4)
                 }
-                setOnTouchListener { _, event ->
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        toggleSettingsPanel()
-                        true
-                    } else false
-                }
-            }
-            addView(settingsBtn)
+            })
 
-            val resizeHandle = ImageView(context).apply {
-                setImageResource(android.R.drawable.ic_menu_crop)
-                setBackgroundColor(Color.TRANSPARENT)
-                setColorFilter(Color.WHITE)
-                layoutParams = FrameLayout.LayoutParams(36, 36).apply {
+            // Resize handle (bottom-right)
+            addView(createImageButton(android.R.drawable.ic_menu_crop, Color.WHITE) {
+                // Resize handled by touch
+            }.apply {
+                layoutParams = FrameLayout.LayoutParams(dp(32), dp(32)).apply {
                     gravity = Gravity.BOTTOM or Gravity.END
-                    marginEnd = 4
-                    bottomMargin = 4
+                    rightMargin = dp(4)
+                    bottomMargin = dp(4)
                 }
                 setOnTouchListener(ResizeTouchListener())
-            }
-            addView(resizeHandle)
+            })
 
-            val closeBtn = ImageButton(context).apply {
-                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-                setBackgroundColor(Color.TRANSPARENT)
-                setColorFilter(Color.RED)
-                layoutParams = FrameLayout.LayoutParams(36, 36).apply {
+            // Close button (top-right)
+            addView(createImageButton(android.R.drawable.ic_menu_close_clear_cancel, Color.RED) {
+                hideOverlay()
+            }.apply {
+                layoutParams = FrameLayout.LayoutParams(dp(32), dp(32)).apply {
                     gravity = Gravity.TOP or Gravity.END
-                    marginEnd = 4
-                    topMargin = 4
+                    rightMargin = dp(4)
+                    topMargin = dp(4)
                 }
-                setOnTouchListener { _, event ->
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        hideOverlay()
-                        true
-                    } else false
-                }
-            }
-            addView(closeBtn)
+            })
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun createSettingsPanel(): LinearLayout {
-        val settings = RadarSettings.getInstance(this)
-        val density = resources.displayMetrics.density
+    private fun createImageButton(iconRes: Int, tintColor: Int, onClick: () -> Unit): ImageButton {
+        return ImageButton(this).apply {
+            setImageResource(iconRes)
+            setBackgroundColor(Color.TRANSPARENT)
+            setColorFilter(tintColor)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+            setOnClickListener { onClick() }
+        }
+    }
 
+    private fun createSettingsContent(): LinearLayout {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xDD000000.toInt())
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            setPadding(
-                (8 * density).toInt(),
-                (8 * density).toInt(),
-                (8 * density).toInt(),
-                (8 * density).toInt()
-            )
+            setPadding(dp(12), dp(12), dp(12), dp(12))
 
-            addView(createTextView("RADAR SETTINGS", 14f, true, Color.YELLOW))
+            // Title
+            addView(createTextView("⚙️ RADAR SETTINGS", 16f, true, Color.YELLOW))
             addView(createDivider())
 
-            addView(createTextView("Size: $currentSize px", 12f, false, Color.WHITE))
-            val sizeSlider = SeekBar(context).apply {
-                max = MAX_SIZE - MIN_SIZE
-                progress = currentSize - MIN_SIZE
-                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                        currentSize = MIN_SIZE + progress
-                        updateSizeDisplay()
-                        layoutParams?.width = currentSize
-                        layoutParams?.height = currentSize
-                        windowManager?.updateViewLayout(overlayView, layoutParams)
-                        settings.overlaySize = currentSize
-                    }
-                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-                })
-            }
-            addView(sizeSlider)
-
-            addView(createDivider())
-            addView(createTextView("ENTITIES", 12f, true, Color.CYAN))
-
-            addView(createToggleRow("Resources", settings.showOre) { isChecked ->
-                settings.showOre = isChecked
-                settings.showWood = isChecked
-                settings.showRock = isChecked
-                settings.showFiber = isChecked
-                settings.showHide = isChecked
-            })
-
-            addView(createToggleRow("Mobs", settings.showNormalMobs) { isChecked ->
-                settings.showNormalMobs = isChecked
-            })
-
-            addView(createToggleRow("Bosses", settings.showBosses) { isChecked ->
-                settings.showBosses = isChecked
-            })
-
-            addView(createToggleRow("Players", settings.showPlayers) { isChecked ->
-                settings.showPlayers = isChecked
-            })
-
-            addView(createToggleRow("Hostile Only", settings.hostileOnly) { isChecked ->
-                settings.hostileOnly = isChecked
-            })
-
-            addView(createToggleRow("Dungeons", settings.showDungeons) { isChecked ->
-                settings.showDungeons = isChecked
-            })
-
-            addView(createToggleRow("Chests", settings.showChests) { isChecked ->
-                settings.showChests = isChecked
-            })
-
-            addView(createToggleRow("Fishing", settings.showFishing) { isChecked ->
-                settings.showFishing = isChecked
-            })
-
-            addView(createToggleRow("Mists", settings.showMist) { isChecked ->
-                settings.showMist = isChecked
+            // Size section
+            addView(createTextView("Overlay Size: $currentSize", 13f, false, Color.WHITE))
+            addView(createSeekBar(MAX_SIZE - MIN_SIZE, currentSize - MIN_SIZE) { progress ->
+                currentSize = MIN_SIZE + progress
+                updateLayoutParams()
+                settings.overlaySize = currentSize
             })
 
             addView(createDivider())
+            addView(createTextView("📊 ENTITIES", 13f, true, Color.CYAN))
 
-            addView(createTextView("Min Tier: ${settings.minTier}", 12f, false, Color.WHITE))
-            val tierSlider = SeekBar(context).apply {
-                max = 7
-                progress = settings.minTier - 1
-                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                        settings.minTier = progress + 1
-                        updateTierDisplay(settings.minTier)
-                    }
-                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-                })
-            }
-            addView(tierSlider)
+            // Entity toggles
+            addView(createToggleRow("Resources", settings.showOre) { checked ->
+                settings.showOre = checked
+                settings.showWood = checked
+                settings.showRock = checked
+                settings.showFiber = checked
+                settings.showHide = checked
+            })
+            addView(createToggleRow("Mobs", settings.showNormalMobs) { settings.showNormalMobs = it })
+            addView(createToggleRow("Bosses", settings.showBosses) { settings.showBosses = it })
+            addView(createToggleRow("Players", settings.showPlayers) { settings.showPlayers = it })
+            addView(createToggleRow("Hostile Only", settings.hostileOnly) { settings.hostileOnly = it })
+            addView(createToggleRow("Dungeons", settings.showDungeons) { settings.showDungeons = it })
+            addView(createToggleRow("Chests", settings.showChests) { settings.showChests = it })
+            addView(createToggleRow("Fishing", settings.showFishing) { settings.showFishing = it })
+            addView(createToggleRow("Mists", settings.showMist) { settings.showMist = it })
 
             addView(createDivider())
-            addView(createTextView("DISPLAY", 12f, true, Color.CYAN))
-
-            addView(createToggleRow("Grid", settings.showGrid) { isChecked ->
-                settings.showGrid = isChecked
+            addView(createTextView("🎯 MIN TIER: ${settings.minTier}", 13f, false, Color.WHITE))
+            addView(createSeekBar(7, settings.minTier - 1) { progress ->
+                settings.minTier = progress + 1
             })
 
-            addView(createToggleRow("Labels", settings.showLabels) { isChecked ->
-                settings.showLabels = isChecked
-            })
+            addView(createDivider())
+            addView(createTextView("🎨 DISPLAY", 13f, true, Color.CYAN))
+            
+            addView(createToggleRow("Show Grid", settings.showGrid) { settings.showGrid = it })
+            addView(createToggleRow("Show Labels", settings.showLabels) { settings.showLabels = it })
+            addView(createToggleRow("Hostile Alert", settings.hostileAlert) { settings.hostileAlert = it })
 
-            addView(createToggleRow("Hostile Alert", settings.hostileAlert) { isChecked ->
-                settings.hostileAlert = isChecked
-            })
+            addView(createDivider())
+            addView(createTextView("ℹ️ Tap outside settings to close", 11f, false, Color.GRAY))
         }
     }
 
@@ -302,20 +246,17 @@ class RadarOverlayService : android.app.Service() {
             this.textSize = textSize
             setTextColor(color)
             if (bold) setTypeface(null, Typeface.BOLD)
-            if (text.startsWith("Size:")) sizeDisplay = this
-            if (text.startsWith("Min Tier:")) tierDisplay = this
         }
     }
 
     private fun createDivider(): View {
-        val density = resources.displayMetrics.density
         return View(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                (1 * density).toInt()
+                1
             ).apply {
-                topMargin = (4 * density).toInt()
-                bottomMargin = (4 * density).toInt()
+                topMargin = dp(8)
+                bottomMargin = dp(8)
             }
             setBackgroundColor(0x44FFFFFF)
         }
@@ -327,11 +268,14 @@ class RadarOverlayService : android.app.Service() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            ).apply {
+                topMargin = dp(4)
+                bottomMargin = dp(4)
+            }
 
             addView(TextView(context).apply {
                 text = label
-                textSize = 11f
+                textSize = 12f
                 setTextColor(Color.WHITE)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
@@ -343,31 +287,53 @@ class RadarOverlayService : android.app.Service() {
         }
     }
 
-    private fun updateSizeDisplay() {
-        sizeDisplay?.text = "Size: $currentSize px"
+    private fun createSeekBar(max: Int, progress: Int, onChange: (Int) -> Unit): SeekBar {
+        return SeekBar(this).apply {
+            this.max = max
+            this.progress = progress
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) onChange(progress)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
     }
 
-    private fun updateTierDisplay(tier: Int) {
-        tierDisplay?.text = "Min Tier: $tier"
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
     }
 
-    private fun toggleSettingsPanel() {
+    private fun updateLayoutParams() {
+        layoutParams?.width = currentSize
+        layoutParams?.height = currentSize
+        windowManager?.updateViewLayout(mainOverlayView, layoutParams)
+    }
+
+    private fun toggleSettings() {
         isSettingsVisible = !isSettingsVisible
-        settingsPanel?.visibility = if (isSettingsVisible) View.VISIBLE else View.GONE
-        radarView?.visibility = if (isSettingsVisible) View.GONE else View.VISIBLE
+        settingsScrollView?.visibility = if (isSettingsVisible) View.VISIBLE else View.GONE
+        radarContainer?.visibility = if (isSettingsVisible) View.GONE else View.VISIBLE
+        
+        // Update text with current size
+        if (isSettingsVisible) {
+            // Refresh settings panel if needed
+        }
     }
 
     private fun hideOverlay() {
         if (!isShowing) return
         radarView?.stopRendering()
-        overlayView?.let {
+        mainOverlayView?.let {
             try {
                 windowManager?.removeView(it)
             } catch (e: Exception) { }
         }
-        overlayView = null
+        mainOverlayView = null
         radarView = null
-        settingsPanel = null
+        settingsScrollView = null
+        radarContainer = null
         layoutParams = null
         isShowing = false
         isSettingsVisible = false
@@ -381,55 +347,7 @@ class RadarOverlayService : android.app.Service() {
     }
 
     private fun createNotification(): Notification {
-        return AlbionRadarApp.createOverlayNotification(this, "Radar Active - Tap to open")
-    }
-
-    private inner class MoveTouchListener : View.OnTouchListener {
-        private var initialX = 0
-        private var initialY = 0
-        private var initialTouchX = 0f
-        private var initialTouchY = 0f
-        private var isDragging = false
-
-        @SuppressLint("ClickableViewAccessibility")
-        override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-            if (event == null || layoutParams == null) return false
-            val params = layoutParams ?: return false
-
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    isDragging = false
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                        isDragging = true
-                    }
-                    if (isDragging) {
-                        params.x = initialX + dx.toInt()
-                        params.y = initialY + dy.toInt()
-                        windowManager?.updateViewLayout(overlayView, params)
-                    }
-                    return true
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (!isDragging && !isSettingsVisible) {
-                        RadarSettings.getInstance(this@RadarOverlayService).apply {
-                            overlayX = params.x
-                            overlayY = params.y
-                        }
-                    }
-                    return true
-                }
-            }
-            return false
-        }
+        return AlbionRadarApp.createOverlayNotification(this, "Radar Active")
     }
 
     private inner class ResizeTouchListener : View.OnTouchListener {
@@ -440,7 +358,6 @@ class RadarOverlayService : android.app.Service() {
         @SuppressLint("ClickableViewAccessibility")
         override fun onTouch(v: View?, event: MotionEvent?): Boolean {
             if (event == null || layoutParams == null) return false
-            val params = layoutParams ?: return false
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -451,14 +368,14 @@ class RadarOverlayService : android.app.Service() {
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (event.rawX - startX).toInt()
-                    val newSize = max(MIN_SIZE, min(MAX_SIZE, startSize + dx))
+                    val dy = (event.rawY - startY).toInt()
+                    val delta = if (abs(dx) > abs(dy)) dx else dy
+                    val newSize = max(MIN_SIZE, min(MAX_SIZE, startSize + delta))
+                    
                     if (newSize != currentSize) {
                         currentSize = newSize
-                        params.width = currentSize
-                        params.height = currentSize
-                        windowManager?.updateViewLayout(overlayView, params)
-                        RadarSettings.getInstance(this@RadarOverlayService).overlaySize = currentSize
-                        updateSizeDisplay()
+                        updateLayoutParams()
+                        settings.overlaySize = currentSize
                     }
                     return true
                 }
