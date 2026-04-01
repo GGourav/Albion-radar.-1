@@ -110,10 +110,6 @@ class RadarSettings private constructor(context: Context) {
         get() = prefs.getInt("overlay_y", 500)
         set(value) = prefs.edit().putInt("overlay_y", value).apply()
 
-    var playerName: String
-        get() = prefs.getString("player_name", "") ?: ""
-        set(value) = prefs.edit().putString("player_name", value).apply()
-
     fun shouldShowPlayer(faction: Int): Boolean {
         if (!showPlayers) return false
         if (hostileOnly && faction != 255) return false
