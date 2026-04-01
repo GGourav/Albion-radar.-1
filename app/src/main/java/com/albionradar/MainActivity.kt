@@ -27,6 +27,19 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val VPN_REQUEST_CODE = 1001
         private const val OVERLAY_REQUEST_CODE = 1002
+        
+        @Volatile
+        private var vpnStartedCallback: (() -> Unit)? = null
+        @Volatile
+        private var vpnStoppedCallback: (() -> Unit)? = null
+        
+        fun vpnStarted() {
+            vpnStartedCallback?.invoke()
+        }
+        
+        fun vpnStopped() {
+            vpnStoppedCallback?.invoke()
+        }
     }
 
     private lateinit var radarView: RadarView
@@ -40,7 +53,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var entityCountText: TextView
     private lateinit var zoneNameText: TextView
     
-    private var vpnRunning = false
     private var overlayRunning = false
     
     private val entityManager = EntityManager.getInstance()
@@ -51,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         
         initViews()
         setupListeners()
+        setupVpnCallbacks()
         observeEntities()
     }
 
@@ -68,11 +81,28 @@ class MainActivity : AppCompatActivity() {
         entityAdapter = EntityAdapter()
         entityList.layoutManager = LinearLayoutManager(this)
         entityList.adapter = entityAdapter
+        
+        // Initially hide entity list
+        entityList.visibility = RecyclerView.GONE
+    }
+
+    private fun setupVpnCallbacks() {
+        vpnStartedCallback = {
+            runOnUiThread {
+                updateVpnStatus(true)
+            }
+        }
+        
+        vpnStoppedCallback = {
+            runOnUiThread {
+                updateVpnStatus(false)
+            }
+        }
     }
 
     private fun setupListeners() {
         btnStartVpn.setOnClickListener {
-            if (vpnRunning) {
+            if (AlbionVpnService.isRunning()) {
                 stopVpn()
             } else {
                 startVpn()
@@ -112,6 +142,7 @@ class MainActivity : AppCompatActivity() {
     private fun observeEntities() {
         lifecycleScope.launch {
             entityManager.entities.collect { entities ->
+                radarView.updateEntities(entities)
                 entityCountText.text = "Entities: ${entities.size}"
             }
         }
@@ -128,8 +159,16 @@ class MainActivity : AppCompatActivity() {
         if (intent != null) {
             startActivityForResult(intent, VPN_REQUEST_CODE)
         } else {
-            onActivityResult(VPN_REQUEST_CODE, RESULT_OK, null)
+            startVpnService()
         }
+    }
+
+    private fun startVpnService() {
+        val intent = Intent(this, AlbionVpnService::class.java).apply {
+            action = AlbionVpnService.ACTION_CONNECT
+        }
+        startForegroundService(intent)
+        updateVpnStatus(true)
     }
 
     private fun stopVpn() {
@@ -137,8 +176,7 @@ class MainActivity : AppCompatActivity() {
             action = AlbionVpnService.ACTION_DISCONNECT
         }
         startService(intent)
-        vpnRunning = false
-        updateVpnStatus()
+        updateVpnStatus(false)
     }
 
     private fun showOverlay() {
@@ -177,18 +215,13 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             VPN_REQUEST_CODE -> {
                 if (resultCode == RESULT_OK) {
-                    val intent = Intent(this, AlbionVpnService::class.java).apply {
-                        action = AlbionVpnService.ACTION_CONNECT
-                    }
-                    startForegroundService(intent)
-                    vpnRunning = true
-                    updateVpnStatus()
+                    startVpnService()
                 } else {
                     Toast.makeText(this, R.string.vpn_permission_required, Toast.LENGTH_SHORT).show()
                 }
             }
             OVERLAY_REQUEST_CODE -> {
-                if (resultCode == RESULT_OK || Settings.canDrawOverlays(this)) {
+                if (Settings.canDrawOverlays(this)) {
                     startOverlayService()
                 } else {
                     Toast.makeText(this, R.string.overlay_permission_required, Toast.LENGTH_SHORT).show()
@@ -197,8 +230,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateVpnStatus() {
-        if (vpnRunning) {
+    private fun updateVpnStatus(running: Boolean) {
+        if (running) {
             vpnStatusText.setText(R.string.running)
             vpnStatusText.setTextColor(getColor(R.color.player_friendly))
             btnStartVpn.setText(R.string.stop_vpn)
@@ -216,6 +249,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateVpnStatus()
+        // Check actual VPN status
+        updateVpnStatus(AlbionVpnService.isRunning())
+    }
+
+    override fun onDestroy() {
+        vpnStartedCallback = null
+        vpnStoppedCallback = null
+        super.onDestroy()
     }
 }
